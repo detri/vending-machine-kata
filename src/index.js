@@ -7,6 +7,7 @@ import { createGlobalStyle } from 'styled-components';
 const GlobalStyle = createGlobalStyle`
   body {
     background: lightblue;
+    font-family: Arial, Helvetica, sans-serif;
   }
 `;
 

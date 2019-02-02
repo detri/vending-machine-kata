@@ -1,7 +1,13 @@
 import React, { Component } from 'react';
-import { Coin } from '../utils/enums';
+import { Coin, Weight, Size } from '../utils/enums';
 import {
-  MachineHousing
+  MachineHousing,
+  Screen,
+  Item,
+  Menu,
+  Display,
+  Option,
+  CoinReturn
 } from './Styling';
 
 export default class VendingMachine extends Component {
@@ -49,6 +55,9 @@ export default class VendingMachine extends Component {
   // detect coin type based on weight and size
   detectCoin(coin) {
     for (let coinEnum in Coin) {
+      if (coin.weight === Weight.LIGHT && coin.size === Size.SMALL) {
+        return null;
+      }
       if (coin.weight === Coin[coinEnum].weight && coin.size === Coin[coinEnum].size) {
         return Coin[coinEnum];
       }
@@ -178,7 +187,26 @@ export default class VendingMachine extends Component {
   render() {
     return (
       <MachineHousing>
-        test
+        <Screen>
+          {Object.keys(this.state.stock).map(item =>
+            <Item onClick={() => this.selectProduct(item)}>
+              {item}
+            </Item>)}
+        </Screen>
+        <Menu>
+          <Display>{this.state.display}</Display>
+          <Option onClick={() => this.insertCoin(Coin.QUARTER)}>Insert Quarter</Option>
+          <Option onClick={() => this.insertCoin(Coin.DIME)}>Insert Dime</Option>
+          <Option onClick={() => this.insertCoin(Coin.NICKEL)}>Insert Nickel</Option>
+          <Option onClick={() => this.insertCoin(Coin.PENNY)}>Insert Penny</Option>
+          <CoinReturn>
+            <center><b>Coin Return</b></center>
+            {this.state.coinReturn.map(coin => 
+              <div>
+                Coin Value: ${coin.value && coin.value.toFixed(2)}<br/>
+              </div>)}
+          </CoinReturn>
+        </Menu>
       </MachineHousing>
     );
   }
