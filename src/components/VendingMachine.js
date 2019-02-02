@@ -41,6 +41,7 @@ export default class VendingMachine extends Component {
     return display;
   }
 
+  // detect coin type based on weight and size
   detectCoin(coin) {
     for (let coinEnum in Coin) {
       if (coin.weight === Coin[coinEnum].weight && coin.size === Coin[coinEnum].size) {
@@ -79,11 +80,17 @@ export default class VendingMachine extends Component {
         });
       }
       if (currentValue >= productSelected.price) {
-
         productSelected.amt -= 1;
-        let coinsToReturn = [];
         if (currentValue > productSelected.price) {
-          coinsToReturn = this.returnUnused(productSelected.price, this.state.currentCoins);
+          this.setState({
+            totalCoins: [...this.state.totalCoins, ...this.state.currentCoins]
+          }, () => {
+            const change = this.makeChange(productSelected.price);
+            this.setState({
+              totalCoins: change[0],
+              coinReturn: [...this.state.coinReturn, ...change[1]]
+            });
+          });
         }
         currentValue = 0;
         return this.setState({
@@ -92,8 +99,6 @@ export default class VendingMachine extends Component {
             [product]: productSelected
           },
           currentValue,
-          totalCoins: [...this.state.totalCoins, ...this.state.currentCoins],
-          coinReturn: [...this.state.coinReturn, ...coinsToReturn],
           display: 'THANK YOU'
         });
       }
@@ -108,21 +113,29 @@ export default class VendingMachine extends Component {
     return coinArray.reduce((prev, cur) => prev.value + cur.value);
   }
 
-  returnUnused(value, coinArray) {
+  // make change for a specific price
+  // returns [newTotalCoins, unusedCoins]
+  makeChange(value) {
     let unusedCoins = [];
     let curValue = 0;
-    const coinArrayDesc = coinArray.sort((a, b) => b.value - a.value);
+    const coinArrayDesc = this.state.totalCoins.sort((a, b) => b.value - a.value);
     for (let coin of coinArrayDesc) {
       if (curValue === value) {
         unusedCoins = [...unusedCoins, coin];
+        continue;
       }
       if (curValue + coin.value < value || curValue + coin.value === value) {
         curValue += coin.value;
       }
     }
-    return unusedCoins;
+    // remove returned change from the total coins
+    for (let coin of unusedCoins) {
+      coinArrayDesc.splice(coinArrayDesc.indexOf(coin), 1);
+    }
+    return [coinArrayDesc, unusedCoins];
   }
 
+  // return all inserted coins
   returnCoins() {
     this.setState({
       currentCoins: [],
