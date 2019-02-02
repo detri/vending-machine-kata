@@ -69,3 +69,47 @@ describe('Select Product', () => {
     expect(vendingMachine.checkDisplay()).toBe('$0.75');
   });
 });
+
+describe('Make Change', () => {
+  const testRenderer = TestRenderer.create(<VendingMachine />);
+  const vendingMachine = testRenderer.getInstance();
+
+  it('Should return unused coins', () => {
+    for (let i = 0; i < 5; i++) {
+      vendingMachine.insertCoin(Coin.QUARTER);
+    }
+    expect(vendingMachine.checkDisplay()).toBe('$1.25');
+    vendingMachine.selectProduct('cola');
+    expect(vendingMachine.state.stock.cola.amt).toBe(2);
+    expect(vendingMachine.state.coinReturn).toHaveLength(1);
+  });
+});
+
+describe('Return Coins', () => {
+  const testRenderer = TestRenderer.create(<VendingMachine />);
+  const vendingMachine = testRenderer.getInstance();
+
+  it('Should return any coins put in the machine', () => {
+    vendingMachine.insertCoin(Coin.NICKEL);
+    vendingMachine.insertCoin(Coin.DIME);
+    vendingMachine.insertCoin(Coin.QUARTER);
+    vendingMachine.returnCoins();
+    expect(vendingMachine.state.coinReturn).toHaveLength(3);
+  });
+});
+
+describe('Sold Out', () => {
+  const testRenderer = TestRenderer.create(<VendingMachine />);
+  const vendingMachine = testRenderer.getInstance();
+
+  it('Should properly sell out of items', () => {
+    for (let i = 0; i < 4; i++) {
+      for (let j = 0; j < 4; j++) {
+        vendingMachine.insertCoin(Coin.QUARTER);
+      }
+      vendingMachine.selectProduct('cola');
+    }
+    expect(vendingMachine.checkDisplay()).toBe('SOLD OUT');
+    expect(vendingMachine.checkDisplay()).toBe('$1.00');
+  });
+});

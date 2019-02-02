@@ -30,7 +30,7 @@ export default class VendingMachine extends Component {
 
   checkDisplay() {
     const display = this.state.display;
-    if (display === 'THANK YOU' || display.startsWith('PRICE')) {
+    if (display === 'THANK YOU' || display === 'SOLD OUT' || display.startsWith('PRICE')) {
       const newDisplay = this.state.currentValue ?
                         `$${this.state.currentValue.toFixed(2)}`
                         : 'INSERT COIN';
@@ -73,8 +73,18 @@ export default class VendingMachine extends Component {
     let currentValue = this.state.currentValue;
     if (productSelected) {
       productSelected = { ...productSelected };
+      if (productSelected.amt === 0) {
+        return this.setState({
+          display: 'SOLD OUT'
+        });
+      }
       if (currentValue >= productSelected.price) {
+
         productSelected.amt -= 1;
+        let coinsToReturn = [];
+        if (currentValue > productSelected.price) {
+          coinsToReturn = this.returnUnused(productSelected.price, this.state.currentCoins);
+        }
         currentValue = 0;
         return this.setState({
           stock: {
@@ -82,6 +92,8 @@ export default class VendingMachine extends Component {
             [product]: productSelected
           },
           currentValue,
+          totalCoins: [...this.state.totalCoins, ...this.state.currentCoins],
+          coinReturn: [...this.state.coinReturn, ...coinsToReturn],
           display: 'THANK YOU'
         });
       }
@@ -90,6 +102,32 @@ export default class VendingMachine extends Component {
       });
     }
     return null;
+  }
+
+  determineValue(coinArray) {
+    return coinArray.reduce((prev, cur) => prev.value + cur.value);
+  }
+
+  returnUnused(value, coinArray) {
+    let unusedCoins = [];
+    let curValue = 0;
+    const coinArrayDesc = coinArray.sort((a, b) => b.value - a.value);
+    for (let coin of coinArrayDesc) {
+      if (curValue === value) {
+        unusedCoins = [...unusedCoins, coin];
+      }
+      if (curValue + coin.value < value || curValue + coin.value === value) {
+        curValue += coin.value;
+      }
+    }
+    return unusedCoins;
+  }
+
+  returnCoins() {
+    this.setState({
+      currentCoins: [],
+      coinReturn: [...this.state.coinReturn, ...this.state.currentCoins]
+    });
   }
 
   render() {
