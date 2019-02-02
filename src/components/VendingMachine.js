@@ -1,9 +1,12 @@
 import React, { Component } from 'react';
 import { Coin } from '../utils/enums';
+import {
+  MachineHousing
+} from './Styling';
 
 export default class VendingMachine extends Component {
   state = {
-    display: 'INSERT COIN',
+    display: 'EXACT CHANGE ONLY',
 
     currentValue: 0,
 
@@ -32,8 +35,10 @@ export default class VendingMachine extends Component {
     const display = this.state.display;
     if (display === 'THANK YOU' || display === 'SOLD OUT' || display.startsWith('PRICE')) {
       const newDisplay = this.state.currentValue ?
-                        `$${this.state.currentValue.toFixed(2)}`
-                        : 'INSERT COIN';
+        `$${this.state.currentValue.toFixed(2)}`
+        : this.canMakeChange() ?
+          'INSERT COIN'
+          : 'EXACT CHANGE ONLY';
       this.setState({
         display: newDisplay
       });
@@ -85,11 +90,17 @@ export default class VendingMachine extends Component {
           this.setState({
             totalCoins: [...this.state.totalCoins, ...this.state.currentCoins]
           }, () => {
-            const change = this.makeChange(productSelected.price);
-            this.setState({
-              totalCoins: change[0],
-              coinReturn: [...this.state.coinReturn, ...change[1]]
-            });
+            const change = this.makeChange(this.state.totalCoins, productSelected.price, currentValue);
+            if (change) {
+              this.setState({
+                totalCoins: change[0],
+                coinReturn: [...this.state.coinReturn, ...change[1]]
+              });
+            }
+          });
+        } else {
+          this.setState({
+            totalCoins: [...this.state.totalCoins, ...this.state.currentCoins]
           });
         }
         currentValue = 0;
@@ -115,24 +126,45 @@ export default class VendingMachine extends Component {
 
   // make change for a specific price
   // returns [newTotalCoins, unusedCoins]
-  makeChange(value) {
-    let unusedCoins = [];
-    let curValue = 0;
-    const coinArrayDesc = this.state.totalCoins.sort((a, b) => b.value - a.value);
-    for (let coin of coinArrayDesc) {
-      if (curValue === value) {
-        unusedCoins = [...unusedCoins, coin];
-        continue;
+  // or false if it can't make change
+  makeChange(coins, price, amtInserted) {
+    // check to see if we have coins
+    if (!coins.length) {
+      return false;
+    }
+    // set up coins to return
+    let coinsToReturn = [];
+    // this is how much change we need to make
+    let amtToMatch = amtInserted - price;
+    // try to make change
+    let curAmt = 0;
+    for (let coin of coins) {
+      if (curAmt + coin.value < amtToMatch || curAmt + coin.value === amtToMatch) {
+        curAmt += coin.value;
+        coinsToReturn = [...coinsToReturn, coin];
+        coins.splice(coins.indexOf(coin), 1);
       }
-      if (curValue + coin.value < value || curValue + coin.value === value) {
-        curValue += coin.value;
+      if (curAmt === amtToMatch) {
+        break;
       }
     }
-    // remove returned change from the total coins
-    for (let coin of unusedCoins) {
-      coinArrayDesc.splice(coinArrayDesc.indexOf(coin), 1);
+    if (curAmt !== amtToMatch) {
+      return false;
     }
-    return [coinArrayDesc, unusedCoins];
+    return [coins, coinsToReturn];
+  }
+
+  // see if we can make change for any of our products
+  canMakeChange() {
+    const stock = this.state.stock;
+    let canMakeChange = false;
+    for (let product in stock) {
+      let change = this.makeChange(this.state.totalCoins, stock[product].price, 1);
+      if (change) {
+        canMakeChange = true;
+      }
+    }
+    return canMakeChange;
   }
 
   // return all inserted coins
@@ -145,7 +177,9 @@ export default class VendingMachine extends Component {
 
   render() {
     return (
-      <div>hello</div>
+      <MachineHousing>
+        test
+      </MachineHousing>
     );
   }
 }

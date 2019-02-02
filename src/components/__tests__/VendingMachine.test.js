@@ -12,8 +12,8 @@ describe('Accept Coins', () => {
     weight: Weight.HEAVY
   };
 
-  it('Should display INSERT COIN', () => {
-    expect(vendingMachine.checkDisplay()).toBe('INSERT COIN');
+  it('Should display EXACT CHANGE ONLY with no money in the machine', () => {
+    expect(vendingMachine.checkDisplay()).toBe('EXACT CHANGE ONLY');
   });
 
   it('Should detect valid coins', () => {
@@ -54,6 +54,7 @@ describe('Select Product', () => {
     expect(vendingMachine.checkDisplay()).toBe('$1.00');
     vendingMachine.selectProduct('cola');
     expect(vendingMachine.state.stock.cola.amt).toBe(2);
+    expect(vendingMachine.state.totalCoins).toHaveLength(4);
     expect(vendingMachine.checkDisplay()).toBe('THANK YOU');
     expect(vendingMachine.checkDisplay()).toBe('INSERT COIN');
   });
@@ -111,5 +112,20 @@ describe('Sold Out', () => {
     }
     expect(vendingMachine.checkDisplay()).toBe('SOLD OUT');
     expect(vendingMachine.checkDisplay()).toBe('$1.00');
+  });
+});
+
+describe('Exact Change Only', () => {
+  const testRenderer = TestRenderer.create(<VendingMachine />);
+  const vendingMachine = testRenderer.getInstance();
+
+  it('Should be able to make change for at least one product', () => {
+    vendingMachine.insertCoin(Coin.QUARTER);
+    vendingMachine.insertCoin(Coin.QUARTER);
+    vendingMachine.insertCoin(Coin.DIME);
+    vendingMachine.insertCoin(Coin.NICKEL);
+    vendingMachine.selectProduct('candy');
+    vendingMachine.checkDisplay();
+    expect(vendingMachine.checkDisplay()).toBe('INSERT COIN');
   });
 });
